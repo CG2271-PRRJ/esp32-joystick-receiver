@@ -14,6 +14,20 @@ using namespace std;
 void setup_wifi();
 void callback(char *topic, byte *message, unsigned int length);
 
+#define MOTORSPEED7 255
+#define MOTORSPEED6 220
+#define MOTORSPEED5 195
+#define MOTORSPEED4 175
+#define MOTORSPEED3 150
+#define MOTORSPEED2 135
+#define MOTORSPEED1 120
+#define MOTORSPEED0 0
+
+#define LEFTFORWARD 27
+#define LEFTBACKWARD 14
+#define RIGHTFORWARD 12
+#define RIGHTBACKWARD 13
+
 // Replace the next variables with your SSID/Password combination
 const char *ssid = "Pereiras_2nd_floor";
 const char *password = "volks12345";
@@ -40,6 +54,12 @@ void setup()
   // default settings
   // (you can also pass in a Wire library object like &Wire2)
   // status = bme.begin();
+  setCpuFrequencyMhz(240);
+
+  analogWrite(RIGHTBACKWARD, LOW);
+  analogWrite(RIGHTFORWARD, LOW);
+  analogWrite(LEFTBACKWARD, LOW);
+  analogWrite(LEFTFORWARD, LOW);
 
   setup_wifi();
   client.setServer(mqtt_server, 8000);
@@ -71,6 +91,103 @@ void setup_wifi()
   Serial.println(WiFi.localIP());
 }
 
+int getSpeedFromRep(int representation)
+{
+  int speed;
+  switch (representation)
+  {
+  case 0:
+    speed = -MOTORSPEED7;
+    break;
+  case 1:
+    speed = MOTORSPEED6;
+    break;
+  case 2:
+    speed = MOTORSPEED5;
+    break;
+  case 3:
+    speed = MOTORSPEED4;
+    break;
+  case 4:
+    speed = MOTORSPEED3;
+    break;
+  case 5:
+    speed = MOTORSPEED2;
+    break;
+  case 6:
+    speed = MOTORSPEED1;
+    break;
+  case 7:
+    speed = MOTORSPEED0;
+    break;
+  case 8:
+    speed = MOTORSPEED1;
+    break;
+  case 9:
+    speed = MOTORSPEED2;
+    break;
+  case 10:
+    speed = MOTORSPEED3;
+    break;
+  case 11:
+    speed = MOTORSPEED4;
+    break;
+  case 12:
+    speed = MOTORSPEED5;
+    break;
+  case 13:
+    speed = MOTORSPEED6;
+    break;
+  case 14:
+    speed = MOTORSPEED7;
+    break;
+  default:
+    speed = 0;
+    break;
+  }
+
+  return speed;
+}
+
+void updateLeftMotor(int representation)
+{
+
+  int speed = getSpeedFromRep(representation);
+  if (representation < 7)
+  {
+    analogWrite(LEFTFORWARD, LOW);
+    analogWrite(LEFTBACKWARD, speed);
+  }
+  else
+  {
+    analogWrite(LEFTFORWARD, speed);
+    analogWrite(LEFTBACKWARD, LOW);
+  }
+}
+
+void updateRightMotor(int representation)
+{
+  int speed = getSpeedFromRep(representation);
+  if (representation < 7)
+  {
+    analogWrite(RIGHTFORWARD, LOW);
+    analogWrite(RIGHTBACKWARD, speed);
+  }
+  else
+  {
+    analogWrite(RIGHTFORWARD, speed);
+    analogWrite(RIGHTBACKWARD, LOW);
+  }
+}
+
+void sendMotor(int bignum)
+{
+  int motor1 = bignum / 15;
+  int motor2 = bignum % 15;
+  updateLeftMotor(motor1);
+  updateRightMotor(motor2);
+}
+
 void callback(char *topic, byte *message, unsigned int length)
 {
   string messageTemp;
@@ -79,6 +196,8 @@ void callback(char *topic, byte *message, unsigned int length)
     messageTemp += (char)message[i];
   }
   toSend = stoi(messageTemp);
+  Serial.println(toSend);
+  sendMotor(toSend);
 }
 
 void reconnect()
@@ -111,16 +230,6 @@ void loop()
   {
     reconnect();
   }
-
-  // if (millis() - lastTime > 50)
-  // {
-  if (toSend != prevSend)
-  {
-    Serial.println(toSend);
-    prevSend = toSend;
-  }
-  //   lastTime = millis();
-  // }
 
   client.loop();
 }
