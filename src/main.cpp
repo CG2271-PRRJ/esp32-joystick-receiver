@@ -15,12 +15,12 @@ void setup_wifi();
 void callback(char *topic, byte *message, unsigned int length);
 
 // Replace the next variables with your SSID/Password combination
-const char *ssid = "Pereiras_2nd_floor";
-const char *password = "volks12345";
+const char *ssid = "router-wifi-2098";
+const char *password = "govtech123";
 
 // Add your MQTT Broker IP address, example:
 // const char* mqtt_server = "192.168.1.144";
-const char *mqtt_server = "192.168.2.37";
+const char *mqtt_server = "192.168.108.6";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -28,15 +28,15 @@ long lastMsg = 0;
 char msg[50];
 int value = 0;
 volatile uint64_t lastTime;
-volatile int toSend = 112;
-int prevSend = 0;
+volatile uint8_t toSend = 112;
+volatile uint8_t lastSent = 112;
 
 // LED Pin
 const int ledPin = 4;
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(9600, SERIAL_8N1);
   // default settings
   // (you can also pass in a Wire library object like &Wire2)
   // status = bme.begin();
@@ -53,32 +53,35 @@ void setup_wifi()
 {
   delay(10);
   // We start by connecting to a WiFi network
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
+  // Serial.println();
+  // Serial.print("Connecting to ");
+  // Serial.println(ssid);
 
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
-    Serial.print(".");
+    // Serial.print(".");
   }
 
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  // Serial.println("");
+  // Serial.println("WiFi connected");
+  // Serial.println("IP address: ");
+  // Serial.println(WiFi.localIP());
 }
 
 void callback(char *topic, byte *message, unsigned int length)
 {
-  string messageTemp;
-  for (int i = 0; i < length; i++)
-  {
-    messageTemp += (char)message[i];
-  }
-  toSend = stoi(messageTemp);
+  // cli();
+
+  // if (message[0] != lastSent)
+  // {
+  //   lastSent = message[0];
+  Serial.write(message[0]);
+  // Serial.println(message[0]);
+  // }
+  // sei();
 }
 
 void reconnect()
@@ -86,19 +89,19 @@ void reconnect()
   // Loop until we're reconnected
   while (!client.connected())
   {
-    Serial.print("Attempting MQTT connection...");
+    // Serial.print("Attempting MQTT connection...");
     // Attempt to connect
     if (client.connect("ESP8266Client"))
     {
-      Serial.println("connected");
+      // Serial.println("connected");
       // Subscribe
       client.subscribe("joystick/value");
     }
     else
     {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
+      // Serial.print("failed, rc=");
+      // Serial.print(client.state());
+      // Serial.println(" try again in 5 seconds");
       // Wait 5 seconds before retrying
       delay(5000);
     }
@@ -111,16 +114,6 @@ void loop()
   {
     reconnect();
   }
-
-  // if (millis() - lastTime > 50)
-  // {
-  if (toSend != prevSend)
-  {
-    Serial.println(toSend);
-    prevSend = toSend;
-  }
-  //   lastTime = millis();
-  // }
 
   client.loop();
 }
